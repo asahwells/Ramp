@@ -1,11 +1,12 @@
-import { useCallback } from "react"
+import { useCallback, useState } from "react"
 import { useCustomFetch } from "src/hooks/useCustomFetch"
-import { SetTransactionApprovalParams } from "src/utils/types"
+import { SetTransactionApprovalParams, Transaction } from "src/utils/types"
 import { TransactionPane } from "./TransactionPane"
 import { SetTransactionApprovalFunction, TransactionsComponent } from "./types"
 
 export const Transactions: TransactionsComponent = ({ transactions }) => {
   const { fetchWithoutCache, loading } = useCustomFetch()
+  const [newTransaction, setNewTransaction] = useState<Transaction[] | null>(transactions ?? null)
 
   const setTransactionApproval = useCallback<SetTransactionApprovalFunction>(
     async ({ transactionId, newValue }) => {
@@ -13,19 +14,26 @@ export const Transactions: TransactionsComponent = ({ transactions }) => {
         transactionId,
         value: newValue,
       })
+      const transactionToUpdate = transactions?.find((transaction) => transaction.id === transactionId)
+      if (transactionToUpdate) {
+        const updatedTransaction = { ...transactionToUpdate, approved: newValue }
+        const updatedTransactions = transactions?.map((transaction) =>
+          transaction.id === transactionToUpdate.id ? updatedTransaction : transaction
+        )
+        setNewTransaction(updatedTransactions ?? null)
+      }
     },
-    [fetchWithoutCache]
+    [fetchWithoutCache, transactions]
   )
-
   if (transactions === null) {
     return <div className="RampLoading--container">Loading...</div>
   }
-
+  const updatedTransactionData = newTransaction === null ? transactions : newTransaction
   return (
     <div data-testid="transaction-container">
-      {transactions.map((transaction) => (
+      {updatedTransactionData?.map((transaction) => (
         <TransactionPane
-          key={transaction.id}
+          key={transaction?.id}
           transaction={transaction}
           loading={loading}
           setTransactionApproval={setTransactionApproval}

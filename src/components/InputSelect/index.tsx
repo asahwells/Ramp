@@ -1,7 +1,8 @@
 import Downshift from "downshift"
-import { useCallback, useState } from "react"
+import { useCallback, useContext, useState } from "react"
 import classNames from "classnames"
-import { DropdownPosition, GetDropdownPositionFn, InputSelectOnChange, InputSelectProps } from "./types"
+import { InputSelectOnChange, InputSelectProps } from "./types"
+import { AppContext } from "src/utils/context"
 
 export function InputSelect<TItem>({
   label,
@@ -11,25 +12,22 @@ export function InputSelect<TItem>({
   parseItem,
   isLoading,
   loadingLabel,
+  loadAllTransactions,
 }: InputSelectProps<TItem>) {
   const [selectedValue, setSelectedValue] = useState<TItem | null>(defaultValue ?? null)
-  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition>({
-    top: 0,
-    left: 0,
-  })
-
+  const { setInputValue } = useContext(AppContext)
   const onChange = useCallback<InputSelectOnChange<TItem>>(
-    (selectedItem) => {
-      if (selectedItem === null) {
-        return
+    (selectedItem: any) => {
+      if (selectedItem.id === "") {
+        return [loadAllTransactions(), setSelectedValue(defaultValue ?? null), setInputValue("")]
+      } else {
+        consumerOnChange(selectedItem)
+        setSelectedValue(selectedItem)
       }
-
-      consumerOnChange(selectedItem)
-      setSelectedValue(selectedItem)
+      setInputValue(selectedItem.id)
     },
-    [consumerOnChange]
+    [consumerOnChange, selectedValue, loadAllTransactions, setInputValue]
   )
-
   return (
     <Downshift<TItem>
       id="RampSelect"
@@ -49,7 +47,6 @@ export function InputSelect<TItem>({
       }) => {
         const toggleProps = getToggleButtonProps()
         const parsedSelectedItem = selectedItem === null ? null : parseItem(selectedItem)
-
         return (
           <div className="RampInputSelect--root">
             <label className="RampText--s RampText--hushed" {...getLabelProps()}>
@@ -59,7 +56,7 @@ export function InputSelect<TItem>({
             <div
               className="RampInputSelect--input"
               onClick={(event) => {
-                setDropdownPosition(getDropdownPosition(event.target))
+                // setDropdownPosition(getDropdownPosition(event.target))
                 toggleProps.onClick(event)
               }}
             >
@@ -71,7 +68,7 @@ export function InputSelect<TItem>({
                 "RampInputSelect--dropdown-container-opened": isOpen,
               })}
               {...getMenuProps()}
-              style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
+              // style={{ top: dropdownPosition.top, left: dropdownPosition.left }}
             >
               {renderItems()}
             </div>
@@ -93,21 +90,22 @@ export function InputSelect<TItem>({
 
           return items.map((item, index) => {
             const parsedItem = parseItem(item)
+
             return (
               <div
-                key={parsedItem.value}
+                key={parsedItem?.value}
                 {...getItemProps({
-                  key: parsedItem.value,
+                  key: parsedItem?.value,
                   index,
                   item,
                   className: classNames("RampInputSelect--dropdown-item", {
                     "RampInputSelect--dropdown-item-highlighted": highlightedIndex === index,
                     "RampInputSelect--dropdown-item-selected":
-                      parsedSelectedItem?.value === parsedItem.value,
+                      parsedSelectedItem?.value === parsedItem?.value,
                   }),
                 })}
               >
-                {parsedItem.label}
+                {parsedItem?.label}
               </div>
             )
           })
@@ -115,17 +113,4 @@ export function InputSelect<TItem>({
       }}
     </Downshift>
   )
-}
-
-const getDropdownPosition: GetDropdownPositionFn = (target) => {
-  if (target instanceof Element) {
-    const { top, left } = target.getBoundingClientRect()
-    const { scrollY } = window
-    return {
-      top: scrollY + top + 63,
-      left,
-    }
-  }
-
-  return { top: 0, left: 0 }
 }

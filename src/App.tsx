@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
+import { Fragment, useCallback, useContext, useEffect, useMemo, useState } from "react"
 import { InputSelect } from "./components/InputSelect"
 import { Instructions } from "./components/Instructions"
 import { Transactions } from "./components/Transactions"
@@ -6,6 +6,7 @@ import { useEmployees } from "./hooks/useEmployees"
 import { usePaginatedTransactions } from "./hooks/usePaginatedTransactions"
 import { useTransactionsByEmployee } from "./hooks/useTransactionsByEmployee"
 import { EMPTY_EMPLOYEE } from "./utils/constants"
+import { AppContext } from "./utils/context"
 import { Employee } from "./utils/types"
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
   const [isLoading, setIsLoading] = useState(false)
+  const { inputValue } = useContext(AppContext)
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
@@ -20,13 +22,19 @@ export function App() {
   )
 
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
+    setIsLoading(false)
     transactionsByEmployeeUtils.invalidateData()
 
     await employeeUtils.fetchAll()
     await paginatedTransactionsUtils.fetchAll()
+  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
+  const loadAllTransactions2 = useCallback(async () => {
     setIsLoading(false)
+    transactionsByEmployeeUtils.invalidateData()
+
+    await employeeUtils.fetchAll()
+    await paginatedTransactionsUtils.Allemployee()
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
@@ -36,13 +44,11 @@ export function App() {
     },
     [paginatedTransactionsUtils, transactionsByEmployeeUtils]
   )
-
   useEffect(() => {
     if (employees === null && !employeeUtils.loading) {
       loadAllTransactions()
     }
   }, [employeeUtils.loading, employees, loadAllTransactions])
-
   return (
     <Fragment>
       <main className="MainContainer">
@@ -51,6 +57,7 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
+          loadAllTransactions={() => loadAllTransactions2()}
           isLoading={isLoading}
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
@@ -64,7 +71,6 @@ export function App() {
             if (newValue === null) {
               return
             }
-            console.log("object")
             await loadTransactionsByEmployee(newValue.id)
           }}
         />
@@ -74,7 +80,7 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {inputValue === "" && transactions !== null && paginatedTransactions?.nextPage !== null && (
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}

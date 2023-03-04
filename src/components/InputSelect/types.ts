@@ -8,6 +8,7 @@ export type InputSelectProps<TItem> = {
   parseItem: (item: TItem) => InputSelectItem
   isLoading?: boolean
   loadingLabel: string
+  loadAllTransactions: () => void
 }
 
 export type DropdownPosition = {
@@ -15,6 +16,6 @@ export type DropdownPosition = {
   left: number
 }
 
-export type InputSelectOnChange<TItem> = (selectedItem: TItem | null) => void
+export type InputSelectOnChange<TItems> = (selectedItem: TItems | null) => void
 
 export type GetDropdownPositionFn = (target: EventTarget) => DropdownPosition
