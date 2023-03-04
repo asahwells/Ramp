@@ -1,4 +1,4 @@
-import { createContext } from "react"
+import { createContext, Dispatch, SetStateAction } from "react"
 
 export const AppContext = createContext<AppContextProps>({
   setError: () => {},
@@ -10,5 +10,5 @@ type AppContextProps = {
   setError: (error: string) => void
   cache?: React.MutableRefObject<Map<string, string>>
   inputValue?: string
-  setInputValue: (inputValue: string) => string
+  setInputValue: Dispatch<SetStateAction<string>>
 }
